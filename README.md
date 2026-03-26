@@ -1,5 +1,3 @@
-Here is a complete, professional README.md file tailored for your project. It highlights the high-end UI, the specific "Doubt Dump" logic, and the tech stack you've used with Antigravity and Windsurf.
-
 📐 Mathematics for Mankind
 Mathematics for Mankind is a high-end, full-stack educational platform designed to bridge the gap between YouTube learning and structured classroom success. Built for students from Class 6 to 12, the platform features a sleek "Deep Navy & Purple" aesthetic, smooth Framer Motion animations, and a robust system for academic resource management.
 
