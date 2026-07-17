@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: mathematics-for-mankind-api
+    runtime: node
+    buildCommand: npm install
+    startCommand: node src/server/index.js
+    envVars:
+      - key: NODE_VERSION
+        value: 20.18.0
+      - key: PORT
+        generateValue: false

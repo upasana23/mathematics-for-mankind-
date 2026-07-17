@@ -47,8 +47,11 @@
     "globals": "^17.4.0",
     "vite": "^7.3.6"
   },
-  "description": "This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.",
-  "main": "eslint.config.js",
+  "description": "Mathematics for Mankind - online class platform",
+  "main": "src/server/index.js",
+  "engines": {
+    "node": ">=20.0.0"
+  },
   "keywords": [],
   "author": "",
   "license": "ISC"
