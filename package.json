@@ -8,7 +8,8 @@
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "server": "node src/server/index.js"
+    "server": "node src/server/index.js",
+    "start": "node src/server/index.js"
   },
   "dependencies": {
     "@react-three/drei": "^10.7.7",
