@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { UploadCloud, Image as ImageIcon, CheckCircle, Clock, Send, X, AlertCircle } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import API_BASE from '../config/api';
 
 const DoubtDump = () => {
   const { isAuthenticated, token } = useAuth();
@@ -18,7 +19,7 @@ const DoubtDump = () => {
   const fetchMyDoubts = async () => {
     if (!isAuthenticated) return;
     try {
-      const res = await fetch('http://localhost:5000/api/doubts/my', {
+      const res = await fetch(`${API_BASE}/api/doubts/my`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (res.ok) {
@@ -82,7 +83,7 @@ const DoubtDump = () => {
     if (imageFile) formData.append('image', imageFile);
 
     try {
-      const res = await fetch('http://localhost:5000/api/doubts', {
+      const res = await fetch(`${API_BASE}/api/doubts`, {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${token}` },
         body: formData

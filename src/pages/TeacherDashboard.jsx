@@ -4,6 +4,7 @@ import { teacherDoubts } from '../data/mockData';
 import { useAuth } from '../context/AuthContext';
 import { Search, Filter, CheckCircle, Clock, BookOpen, User, Image as ImageIcon, Send, X, MoreVertical } from 'lucide-react';
 import confetti from 'canvas-confetti';
+import API_BASE from '../config/api';
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -32,7 +33,7 @@ const TeacherDashboard = () => {
 
   const fetchPendingDoubts = async () => {
     try {
-      const res = await fetch('http://localhost:5000/api/doubts/admin', {
+      const res = await fetch(`${API_BASE}/api/doubts/admin`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (res.ok) {
@@ -49,7 +50,7 @@ const TeacherDashboard = () => {
   // Fetch notes posted by the admin/teacher
   const fetchPostedNotes = async () => {
     try {
-      const res = await fetch('http://localhost:5000/api/notes', {
+      const res = await fetch(`${API_BASE}/api/notes`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (res.ok) {
@@ -94,7 +95,7 @@ const TeacherDashboard = () => {
         formData.append('solutionImage', resolutionFile);
       }
 
-      const res = await fetch(`http://localhost:5000/api/doubts/${selectedDoubt._id}/solve`, {
+      const res = await fetch(`${API_BASE}/api/doubts/${selectedDoubt._id}/solve`, {
         method: 'PUT',
         headers: { 'Authorization': `Bearer ${token}` },
         body: formData

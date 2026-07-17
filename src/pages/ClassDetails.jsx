@@ -3,8 +3,7 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FileText, PlayCircle, ArrowLeft, BookOpen, Plus, Trash2, Edit2, X, Upload, Loader2, CheckCircle } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-
-const API_BASE = 'http://localhost:5000';
+import API_BASE from '../config/api';
 
 const ClassDetails = () => {
   const { classId } = useParams();
