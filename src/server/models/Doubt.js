@@ -2,8 +2,7 @@ import mongoose from 'mongoose';
 
 const doubtSchema = new mongoose.Schema({
   studentId: { 
-    type: mongoose.Schema.Types.ObjectId, 
-    ref: 'User', 
+    type: String, 
     required: true 
   },
   studentName: String,

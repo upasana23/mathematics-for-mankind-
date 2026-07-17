@@ -1,0 +1,26 @@
+[
+  {
+    "_id": "doubt_1784314889281",
+    "studentId": "local_1784314622369",
+    "studentName": "upax",
+    "classLevel": "10",
+    "title": "how to solve limit",
+    "description": "",
+    "imageUrl": null,
+    "status": "Solved",
+    "createdAt": "2026-07-17T19:01:29.281Z",
+    "solutionText": "yea"
+  },
+  {
+    "_id": "doubt_1784314837238",
+    "studentId": "admin_debprasad_majumder",
+    "studentName": "Debprasad Majumder",
+    "classLevel": "12",
+    "title": "How to solve limits with infinity?",
+    "description": "",
+    "imageUrl": null,
+    "status": "Solved",
+    "createdAt": "2026-07-17T19:00:37.238Z",
+    "solutionText": "yo\r\n"
+  }
+]

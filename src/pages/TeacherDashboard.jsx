@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { teacherDoubts } from '../data/mockData';
 import { useAuth } from '../context/AuthContext';
@@ -22,7 +22,9 @@ const TeacherDashboard = () => {
   const [selectedClass, setSelectedClass] = useState('All');
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [searchQuery, setSearchQuery] = useState('');
-  
+  // State for notes posted by admin/teacher
+  const [postedNotes, setPostedNotes] = useState([]);
+
   const [selectedDoubt, setSelectedDoubt] = useState(null);
   const [resolutionText, setResolutionText] = useState('');
   const [resolutionImage, setResolutionImage] = useState(null);
@@ -44,9 +46,27 @@ const TeacherDashboard = () => {
     }
   };
 
-  useState(() => {
-    if (user?.role === 'teacher') fetchPendingDoubts();
-  }, [user]);
+  // Fetch notes posted by the admin/teacher
+  const fetchPostedNotes = async () => {
+    try {
+      const res = await fetch('http://localhost:5000/api/notes', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setPostedNotes(data);
+      }
+    } catch (err) {
+      console.error('Error fetching posted notes:', err);
+    }
+  };
+
+  useEffect(() => {
+    if (user?.role === 'teacher') {
+      fetchPendingDoubts();
+      fetchPostedNotes();
+    }
+  }, [user, token]);
 
   // Derived Stats
   const totalDoubts = doubts.length;
@@ -91,7 +111,7 @@ const TeacherDashboard = () => {
 
         // Refresh list
         fetchPendingDoubts();
-        
+
         // Close the workstation
         setSelectedDoubt(null);
         setResolutionText('');
@@ -126,11 +146,11 @@ const TeacherDashboard = () => {
 
   return (
     <div className="pt-24 pb-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto min-h-screen">
-      
+
       {/* Header & Stat Cards */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-white mb-6">Resolution Dashboard</h1>
-        
+
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <motion.div whileHover={{ y: -5 }} className="glass-panel p-6 border-l-4 border-l-purple-500">
             <h3 className="text-slate-400 font-medium mb-1">Total Doubts</h3>
@@ -150,22 +170,22 @@ const TeacherDashboard = () => {
       </div>
 
       <div className="grid lg:grid-cols-4 gap-8 relative">
-        
+
         {/* Filter Sidebar */}
         <div className="lg:col-span-1 space-y-6">
           <div className="glass-panel p-5 sticky top-28 border border-white/5">
             <h3 className="text-lg font-bold text-white mb-4 flex items-center">
               <Filter className="w-5 h-5 mr-2 text-indigo-400" /> Filters
             </h3>
-            
+
             <div className="space-y-4">
               {/* Search by Student Name */}
               <div>
                 <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Student Name</label>
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
-                  <input 
-                    type="text" 
+                  <input
+                    type="text"
                     placeholder="e.g. Prabhat Jr."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
@@ -179,7 +199,7 @@ const TeacherDashboard = () => {
                 <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Class Level</label>
                 <div className="flex flex-wrap gap-2">
                   {classes.map(c => (
-                    <button 
+                    <button
                       key={c}
                       onClick={() => setSelectedClass(c)}
                       className={`px-3 py-1 text-xs rounded-full border transition-colors ${selectedClass === c ? 'bg-indigo-500/20 text-indigo-300 border-indigo-500/50' : 'bg-black/20 text-slate-400 border-white/5 hover:border-white/20'}`}
@@ -193,7 +213,7 @@ const TeacherDashboard = () => {
               {/* Category Filter */}
               <div>
                 <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Category</label>
-                <select 
+                <select
                   value={selectedCategory}
                   onChange={(e) => setSelectedCategory(e.target.value)}
                   className="w-full bg-black/30 border border-white/10 rounded-lg py-2 px-3 text-sm text-white focus:border-purple-500/50 outline-none appearance-none"
@@ -208,7 +228,7 @@ const TeacherDashboard = () => {
         </div>
 
         {/* Doubts List */}
-        <div className="lg:col-span-3">
+        <div className="lg:col-span-2">
           <motion.div variants={containerVariants} initial="hidden" animate="show" className="space-y-4">
             {filteredDoubts.length === 0 ? (
               <div className="text-center py-12 glass-panel border border-white/5">
@@ -218,15 +238,15 @@ const TeacherDashboard = () => {
               </div>
             ) : (
               filteredDoubts.map((doubt) => (
-                <motion.div 
+                <motion.div
                   key={doubt._id}
                   variants={itemVariants}
                   onClick={() => setSelectedDoubt(doubt)}
                   className={`glass-panel p-5 border cursor-pointer hover:shadow-lg transition-all flex flex-col md:flex-row gap-4 relative overflow-hidden group ${selectedDoubt?._id === doubt._id ? 'border-purple-500 shadow-[0_0_15px_rgba(168,85,247,0.2)]' : 'border-white/5 hover:border-white/20'}`}
                 >
                   {/* Status Indicator Bar */}
-                  <div className={`absolute top-0 left-0 w-1 h-full ${doubt.status === 'Pending' ? 'bg-amber-500' : 'bg-teal-500'}`} />
-                  
+                  <div className={`absolute top-0 left-1 w-1 h-full ${doubt.status === 'Pending' ? 'bg-amber-500' : 'bg-teal-500'}`} />
+
                   <div className="flex-grow space-y-2">
                     <div className="flex flex-wrap items-center gap-3">
                       <span className={`text-xs font-bold px-2 py-1 rounded flex items-center w-fit ${doubt.status === 'Pending' ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20' : 'bg-teal-500/10 text-teal-400 border border-teal-500/20'}`}>
@@ -235,16 +255,16 @@ const TeacherDashboard = () => {
                       </span>
                       <span className="text-xs text-slate-400 bg-white/5 px-2 py-1 rounded">Class {doubt.classLevel} • {doubt.category || 'General'}</span>
                     </div>
-                    
+
                     <p className="text-slate-200 font-medium line-clamp-2 mt-2">{doubt.title}</p>
-                    
+
                     <div className="flex items-center text-xs text-slate-500 space-x-4 pt-2">
                       <span className="flex items-center"><User size={12} className="mr-1" /> {doubt.studentName}</span>
                       <span>{new Date(doubt.createdAt).toLocaleDateString()}</span>
                       {doubt.imageUrl && <span className="flex items-center text-indigo-400"><ImageIcon size={12} className="mr-1" /> Image Attached</span>}
                     </div>
                   </div>
-                  
+
                   <div className="hidden md:flex items-center justify-center shrink-0 w-10 text-slate-600 group-hover:text-purple-400 transition-colors">
                     <MoreVertical size={20} />
                   </div>
@@ -254,18 +274,39 @@ const TeacherDashboard = () => {
           </motion.div>
         </div>
 
+        {/* Notes Column */}
+        <div className="lg:col-span-1 space-y-4">
+          <h3 className="text-xl font-bold text-white mb-2">Posted Notes</h3>
+          {postedNotes.length === 0 ? (
+            <div className="text-center py-4 glass-panel border border-white/5">
+              <p className="text-slate-400">No notes posted yet.</p>
+            </div>
+          ) : (
+            postedNotes.map((note) => (
+              <div key={note._id || note.id} className="glass-panel p-3 border border-white/10 rounded">
+                <div className="flex justify-between items-center mb-1">
+                  <span className="text-xs font-medium bg-indigo-500/20 text-indigo-300 px-2 py-1 rounded">Class {note.classLevel}</span>
+                  <span className="text-xs text-slate-400">{new Date(note.createdAt).toLocaleDateString()}</span>
+                </div>
+                <h4 className="text-sm font-semibold text-white line-clamp-2">{note.title}</h4>
+                <p className="text-xs text-slate-400 mt-1">{note.category || 'General'}</p>
+              </div>
+            ))
+          )}
+        </div>
+
       </div>
 
       {/* Resolution Workstation Drawer/Modal */}
       <AnimatePresence>
         {selectedDoubt && (
           <>
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
               onClick={() => setSelectedDoubt(null)}
               className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40"
             />
-            <motion.div 
+            <motion.div
               initial={{ x: '100%', opacity: 0 }}
               animate={{ x: 0, opacity: 1 }}
               exit={{ x: '100%', opacity: 0 }}
@@ -283,7 +324,7 @@ const TeacherDashboard = () => {
               </div>
 
               <div className="p-6 flex-grow space-y-6">
-                
+
                 {/* Student Query */}
                 <div className="bg-black/30 p-5 rounded-xl border border-white/5">
                   <div className="flex items-center space-x-2 text-xs text-slate-500 mb-3 uppercase tracking-wider font-semibold">
@@ -291,12 +332,12 @@ const TeacherDashboard = () => {
                     <span>The Problem</span>
                   </div>
                   <p className="text-white text-lg leading-relaxed">{selectedDoubt.title}</p>
-                  
+
                   {selectedDoubt.imageUrl && (
                     <div className="mt-4 rounded-lg overflow-hidden border border-white/10 group relative">
                       <img src={selectedDoubt.imageUrl} alt="Student work" className="w-full h-auto max-h-64 object-cover" />
                       <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
-                         <span className="text-white font-medium flex items-center bg-black/60 px-3 py-1 rounded-full"><Search size={14} className="mr-2" /> Click to View Full Size</span>
+                        <span className="text-white font-medium flex items-center bg-black/60 px-3 py-1 rounded-full"><Search size={14} className="mr-2" /> Click to View Full Size</span>
                       </div>
                     </div>
                   )}
@@ -308,7 +349,7 @@ const TeacherDashboard = () => {
                     <h3 className="text-lg font-bold text-teal-400 flex items-center">
                       <CheckCircle className="mr-2" size={20} /> The Solution Matrix
                     </h3>
-                    
+
                     <textarea
                       placeholder="Type your explanation here..."
                       value={resolutionText}
@@ -318,42 +359,42 @@ const TeacherDashboard = () => {
 
                     {/* Handwriting Upload Request - Prominent */}
                     <div className="p-4 bg-purple-500/10 border-2 border-dashed border-purple-500/40 rounded-xl relative hover:bg-purple-500/20 transition-colors cursor-pointer group">
-                       <input 
-                         type="file" 
-                         accept="image/*" 
-                         onChange={handleImageUpload}
-                         className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
-                       />
-                       <div className="flex flex-col items-center justify-center text-center space-y-2">
-                         <div className="w-12 h-12 rounded-full bg-purple-500/20 text-purple-400 flex items-center justify-center group-hover:scale-110 transition-transform">
-                           <ImageIcon size={24} />
-                         </div>
-                         <div>
-                           <p className="text-white font-medium">Upload Handwritten Solution</p>
-                           <p className="text-slate-400 text-sm mt-1">Snap a photo of your paper solution to attach</p>
-                         </div>
-                       </div>
-                       
-                       {resolutionImage && (
-                         <div className="absolute inset-0 bg-black/80 z-20 p-2 flex items-center justify-center rounded-xl">
-                            <img src={resolutionImage} className="h-full w-auto object-contain rounded" alt="Teacher Solution preview" />
-                            <button onClick={(e) => {e.preventDefault(); setResolutionImage(null);}} className="absolute top-2 right-2 p-1 bg-red-500 rounded text-white z-30"><X size={14}/></button>
-                         </div>
-                       )}
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleImageUpload}
+                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                      />
+                      <div className="flex flex-col items-center justify-center text-center space-y-2">
+                        <div className="w-12 h-12 rounded-full bg-purple-500/20 text-purple-400 flex items-center justify-center group-hover:scale-110 transition-transform">
+                          <ImageIcon size={24} />
+                        </div>
+                        <div>
+                          <p className="text-white font-medium">Upload Handwritten Solution</p>
+                          <p className="text-slate-400 text-sm mt-1">Snap a photo of your paper solution to attach</p>
+                        </div>
+                      </div>
+
+                      {resolutionImage && (
+                        <div className="absolute inset-0 bg-black/80 z-20 p-2 flex items-center justify-center rounded-xl">
+                          <img src={resolutionImage} className="h-full w-auto object-contain rounded" alt="Teacher Solution preview" />
+                          <button onClick={(e) => { e.preventDefault(); setResolutionImage(null); }} className="absolute top-2 right-2 p-1 bg-red-500 rounded text-white z-30"><X size={14} /></button>
+                        </div>
+                      )}
                     </div>
                   </div>
                 ) : (
-                   <div className="bg-teal-500/10 border border-teal-500/20 p-5 rounded-xl text-center">
-                     <CheckCircle className="w-10 h-10 text-teal-400 mx-auto mb-2" />
-                     <h3 className="text-teal-300 font-bold mb-1">Doubt Resolved</h3>
-                     <p className="text-teal-400/70 text-sm">This item is currently stored in the archive.</p>
-                   </div>
+                  <div className="bg-teal-500/10 border border-teal-500/20 p-5 rounded-xl text-center">
+                    <CheckCircle className="w-10 h-10 text-teal-400 mx-auto mb-2" />
+                    <h3 className="text-teal-300 font-bold mb-1">Doubt Resolved</h3>
+                    <p className="text-teal-400/70 text-sm">This item is currently stored in the archive.</p>
+                  </div>
                 )}
               </div>
 
               {selectedDoubt.status === 'Pending' && (
                 <div className="p-6 border-t border-white/5 bg-navy-900/90 mt-auto sticky bottom-0">
-                  <button 
+                  <button
                     onClick={handleResolve}
                     className="w-full py-4 rounded-xl bg-gradient-to-r from-teal-500 to-emerald-600 hover:from-teal-400 hover:to-emerald-500 text-white font-bold text-lg flex items-center justify-center space-x-2 shadow-lg transition-all"
                   >

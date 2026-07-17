@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { UploadCloud, Image as ImageIcon, CheckCircle, Clock, Send, X } from 'lucide-react';
+import { UploadCloud, Image as ImageIcon, CheckCircle, Clock, Send, X, AlertCircle } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
@@ -13,6 +13,7 @@ const DoubtDump = () => {
   const [doubts, setDoubts] = useState([]);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errorMsg, setErrorMsg] = useState('');
 
   const fetchMyDoubts = async () => {
     if (!isAuthenticated) return;
@@ -29,9 +30,9 @@ const DoubtDump = () => {
     }
   };
 
-  useState(() => {
+  useEffect(() => {
     fetchMyDoubts();
-  }, [isAuthenticated]);
+  }, [isAuthenticated, token]);
 
   const handleDragOver = (e) => {
     e.preventDefault();
@@ -68,6 +69,7 @@ const DoubtDump = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setErrorMsg('');
     if (!isAuthenticated) {
       setShowLoginModal(true);
       return;
@@ -86,14 +88,19 @@ const DoubtDump = () => {
         body: formData
       });
 
-      if (res.ok) {
-        setTextDoubt('');
-        setImagePreview(null);
-        setImageFile(null);
-        fetchMyDoubts(); // Refresh history
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.message || 'Server error: could not submit doubt.');
       }
+
+      setTextDoubt('');
+      setImagePreview(null);
+      setImageFile(null);
+      fetchMyDoubts(); // Refresh history
     } catch (err) {
       console.error('Upload failed', err);
+      setErrorMsg(err.message);
     } finally {
       setIsSubmitting(false);
     }
@@ -115,6 +122,12 @@ const DoubtDump = () => {
         <div className="lg:col-span-3 space-y-6">
           <div className="glass-panel p-6 border border-white/10 relative">
             <h2 className="text-2xl font-semibold text-white mb-4">Submit a New Doubt</h2>
+            {errorMsg && (
+              <div className="mb-4 p-3 rounded-xl bg-red-500/10 border border-red-500/30 flex items-center text-red-300 text-sm">
+                <AlertCircle size={16} className="mr-2 shrink-0" />
+                {errorMsg}
+              </div>
+            )}
             <form onSubmit={handleSubmit}>
               <textarea
                 value={textDoubt}

@@ -22,6 +22,12 @@ const ClassDetails = () => {
     file: null
   });
 
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editingNote, setEditingNote] = useState(null);
+  const [deletingNote, setDeletingNote] = useState(null);
+  const [isUpdating, setIsUpdating] = useState(false);
+  const [updateError, setUpdateError] = useState('');
+
   // Fetch notes from backend
   const fetchNotes = async () => {
     try {
@@ -78,9 +84,18 @@ const ClassDetails = () => {
     }
   };
 
-  const handleDelete = async (id) => {
-    if (!window.confirm('Are you sure you want to delete this note?')) return;
-    
+  const confirmDeleteNote = (note) => {
+    setDeletingNote(note);
+  };
+
+  const executeDeleteNote = async () => {
+    if (!deletingNote) return;
+    const id = deletingNote._id || deletingNote.id;
+    setDeletingNote(null);
+
+    // Optimistic UI update
+    setNotes((prevNotes) => prevNotes.filter((n) => (n._id || n.id) !== id));
+
     try {
       const res = await fetch(`${API_BASE}/api/notes/${id}`, {
         method: 'DELETE',
@@ -88,9 +103,54 @@ const ClassDetails = () => {
           'Authorization': `Bearer ${token}`
         }
       });
-      if (res.ok) fetchNotes();
+      if (!res.ok) {
+        console.error('Delete failed with status:', res.status);
+        fetchNotes();
+      }
     } catch (err) {
-      alert('Delete failed');
+      console.error('Delete failed:', err);
+      fetchNotes();
+    }
+  };
+
+  const handleEditClick = (note) => {
+    setEditingNote({ ...note });
+    setUpdateError('');
+    setIsEditModalOpen(true);
+  };
+
+  const handleUpdateNote = async (e) => {
+    e.preventDefault();
+    if (!editingNote) return;
+    setIsUpdating(true);
+    setUpdateError('');
+
+    try {
+      const res = await fetch(`${API_BASE}/api/notes/${editingNote._id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          title: editingNote.title,
+          category: editingNote.category,
+          classLevel: classId
+        })
+      });
+
+      if (res.ok) {
+        setIsEditModalOpen(false);
+        setEditingNote(null);
+        fetchNotes();
+      } else {
+        const data = await res.json();
+        setUpdateError(data.message || 'Update failed');
+      }
+    } catch (err) {
+      setUpdateError('Server connection failed');
+    } finally {
+      setIsUpdating(false);
     }
   };
 
@@ -160,13 +220,14 @@ const ClassDetails = () => {
                 {user?.role === 'teacher' && (
                   <div className="flex items-center space-x-2 border-l border-white/10 pl-3 ml-2">
                     <button 
+                      onClick={() => handleEditClick(note)}
                       className="p-2 text-slate-400 hover:text-white hover:bg-white/5 rounded-lg transition-colors"
                       title="Edit Note"
                     >
                       <Edit2 size={18} />
                     </button>
                     <button 
-                      onClick={() => handleDelete(note._id)}
+                      onClick={() => confirmDeleteNote(note)}
                       className="p-2 text-slate-400 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
                       title="Delete Note"
                     >
@@ -299,6 +360,124 @@ const ClassDetails = () => {
                   </button>
                 </form>
               )}
+            </motion.div>
+          </div>
+        )}
+        {/* Edit Modal */}
+        {isEditModalOpen && editingNote && (
+          <div className="fixed inset-0 z-[60] flex items-center justify-center px-4">
+            <motion.div 
+              initial={{ opacity: 0 }} 
+              animate={{ opacity: 1 }} 
+              exit={{ opacity: 0 }}
+              onClick={() => !isUpdating && setIsEditModalOpen(false)}
+              className="absolute inset-0 bg-black/80 backdrop-blur-sm"
+            />
+            <motion.div 
+              initial={{ scale: 0.9, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.9, opacity: 0, y: 20 }}
+              className="relative w-full max-w-md glass-panel p-8 overflow-hidden"
+            >
+              <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-purple-500 via-indigo-500 to-teal-500" />
+              
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-2xl font-bold text-white">Edit Note</h2>
+                <button 
+                  onClick={() => setIsEditModalOpen(false)} 
+                  disabled={isUpdating}
+                  className="p-2 text-slate-400 hover:text-white transition-colors"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+
+              <form onSubmit={handleUpdateNote} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-300 mb-1">Title</label>
+                  <input 
+                    type="text"
+                    required
+                    value={editingNote.title}
+                    onChange={(e) => setEditingNote({...editingNote, title: e.target.value})}
+                    className="w-full bg-black/30 border border-white/10 rounded-xl py-3 px-4 text-white focus:border-purple-500/50 outline-none"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-slate-300 mb-1">Category</label>
+                  <select 
+                    value={editingNote.category}
+                    onChange={(e) => setEditingNote({...editingNote, category: e.target.value})}
+                    className="w-full bg-black/50 border border-white/10 rounded-xl py-3 px-4 text-white outline-none"
+                  >
+                    {['Algebra', 'Geometry', 'Calculus', 'Vedic', 'Other'].map(cat => (
+                      <option key={cat} value={cat} className="bg-navy-900">{cat}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {updateError && (
+                  <div className="p-3 text-sm text-red-400 bg-red-500/10 border border-red-500/20 rounded-lg">
+                    {updateError}
+                  </div>
+                )}
+
+                <button 
+                  type="submit"
+                  disabled={isUpdating}
+                  className="w-full py-3 mt-6 bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-bold rounded-xl hover:from-purple-500 hover:to-indigo-500 disabled:opacity-50 flex items-center justify-center space-x-2 shadow-lg shadow-purple-500/20"
+                >
+                  {isUpdating ? (
+                    <>
+                      <Loader2 className="animate-spin" size={20} />
+                      <span>Saving...</span>
+                    </>
+                  ) : (
+                    <span>Save Changes</span>
+                  )}
+                </button>
+              </form>
+            </motion.div>
+          </div>
+        )}
+        {/* Delete Confirmation Modal */}
+        {deletingNote && (
+          <div className="fixed inset-0 z-[60] flex items-center justify-center px-4">
+            <motion.div 
+              initial={{ opacity: 0 }} 
+              animate={{ opacity: 1 }} 
+              exit={{ opacity: 0 }}
+              onClick={() => setDeletingNote(null)}
+              className="absolute inset-0 bg-black/80 backdrop-blur-sm"
+            />
+            <motion.div 
+              initial={{ scale: 0.9, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.9, opacity: 0, y: 20 }}
+              className="relative w-full max-w-sm glass-panel p-6 overflow-hidden text-center z-10"
+            >
+              <div className="w-16 h-16 bg-red-500/20 text-red-400 rounded-full flex items-center justify-center mx-auto mb-4 border border-red-500/30">
+                <Trash2 size={28} />
+              </div>
+              <h3 className="text-xl font-bold text-white mb-2">Delete Note?</h3>
+              <p className="text-slate-300 text-sm mb-6">
+                Are you sure you want to delete <span className="font-semibold text-purple-300">"{deletingNote.title}"</span>? This action cannot be undone.
+              </p>
+              <div className="flex space-x-3">
+                <button 
+                  onClick={() => setDeletingNote(null)}
+                  className="flex-1 py-2.5 bg-white/5 hover:bg-white/10 text-slate-300 font-medium rounded-xl transition-colors cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button 
+                  onClick={executeDeleteNote}
+                  className="flex-1 py-2.5 bg-red-600 hover:bg-red-500 text-white font-bold rounded-xl shadow-lg shadow-red-600/30 transition-colors cursor-pointer"
+                >
+                  Delete
+                </button>
+              </div>
             </motion.div>
           </div>
         )}

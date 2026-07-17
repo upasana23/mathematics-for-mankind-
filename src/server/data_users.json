@@ -1,0 +1,47 @@
+[
+  {
+    "_id": "admin_debprasad_majumder",
+    "name": "Debprasad Majumder",
+    "school": "Mathematics for Mankind Admin",
+    "classLevel": "12",
+    "role": "teacher",
+    "password": "$2b$10$m/GbN3Q6YsKCzQSBrSLi7.psJnm8FxU82KQwAG7.IbISwp2ZgE9cS",
+    "createdAt": "2026-07-17T18:00:00.000Z"
+  },
+  {
+    "_id": "admin_debprasad",
+    "name": "Debprasad",
+    "school": "Mathematics for Mankind Admin",
+    "classLevel": "12",
+    "role": "teacher",
+    "password": "$2b$10$m/GbN3Q6YsKCzQSBrSLi7.psJnm8FxU82KQwAG7.IbISwp2ZgE9cS",
+    "createdAt": "2026-07-17T18:00:00.000Z"
+  },
+  {
+    "_id": "local_1784314221314",
+    "name": "Carl Gauss",
+    "school": "Gottingen",
+    "classLevel": "10",
+    "role": "student",
+    "password": "$2b$10$btiRQLRvd0tOxeGuP9cId.sYWcwZg72L/RU6QtGVpZOLnG7fVRMhq",
+    "createdAt": "2026-07-17T18:50:21.314Z"
+  },
+  {
+    "_id": "local_1784314276153",
+    "name": "upasana",
+    "school": "bss",
+    "classLevel": "10",
+    "role": "student",
+    "password": "$2b$10$nNHJEeRpkdKb4I/W1CMpuuwIaiJWcOivVDYRCyOn6jxE0oZ8D/t6y",
+    "createdAt": "2026-07-17T18:51:16.153Z"
+  },
+  {
+    "_id": "local_1784314622369",
+    "name": "upax",
+    "school": "dps",
+    "classLevel": "10",
+    "role": "student",
+    "password": "$2b$10$udMGH4bl0k/5kC.9xvmJNOTb5rccBeu.3figg9WHaT1Ngzcn6M33.",
+    "createdAt": "2026-07-17T18:57:02.369Z"
+  }
+]

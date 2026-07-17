@@ -5,11 +5,14 @@ import { dirname, join } from 'path';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 dotenv.config({ path: join(__dirname, '.env') });
+dotenv.config();
 import express from 'express';
 import mongoose from 'mongoose';
 import cors from 'cors';
 import jwt from 'jsonwebtoken';
 import multer from 'multer';
+import bcrypt from 'bcryptjs';
+import fs from 'fs';
 import User from './models/User.js';
 import roleCheck from './middleware/roleCheck.js';
 import noteRoutes from './routes/noteRoutes.js';
@@ -22,11 +25,88 @@ const JWT_SECRET = process.env.JWT_SECRET || 'mathematics-for-mankind-fallback-s
 // ── Middleware ──────────────────────────────────────────
 app.use(cors({ origin: true, credentials: true }));
 app.use(express.json());
+app.use('/uploads', express.static(join(__dirname, 'uploads')));
+
+// ── Helper: Local User Fallback Store ───────────────────
+const getLocalUsers = () => {
+  try {
+    const filePath = join(__dirname, 'data_users.json');
+    if (fs.existsSync(filePath)) {
+      return JSON.parse(fs.readFileSync(filePath, 'utf8'));
+    }
+  } catch (e) {
+    console.error('Error reading local users file:', e);
+  }
+  return [];
+};
+
+const saveLocalUsers = (users) => {
+  try {
+    const filePath = join(__dirname, 'data_users.json');
+    fs.writeFileSync(filePath, JSON.stringify(users, null, 2));
+  } catch (e) {
+    console.error('Error writing local users file:', e);
+  }
+};
+
+const findUserByName = async (name) => {
+  const cleanName = (name || '').trim();
+  if (!cleanName) return null;
+
+  if (mongoose.connection.readyState === 1) {
+    try {
+      const escapeRegex = (str) => str.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&');
+      const dbUser = await User.findOne({ 
+        name: { $regex: new RegExp('^' + escapeRegex(cleanName) + '$', 'i') } 
+      });
+      if (dbUser) return dbUser;
+    } catch (e) {
+      console.warn('MongoDB query warning, using local store:', e.message);
+    }
+  }
+  const users = getLocalUsers();
+  return users.find((u) => u.name.trim().toLowerCase() === cleanName.toLowerCase()) || null;
+};
+
+const createUser = async (data) => {
+  if (mongoose.connection.readyState === 1) {
+    try {
+      return await User.create(data);
+    } catch (e) {
+      console.warn('MongoDB create warning, saving to local store:', e.message);
+    }
+  }
+  const users = getLocalUsers();
+  const salt = await bcrypt.genSalt(10);
+  const hashedPassword = await bcrypt.hash(data.password, salt);
+  const newUser = {
+    _id: 'local_' + Date.now(),
+    name: data.name,
+    school: data.school || '',
+    classLevel: data.classLevel || '10',
+    role: data.role || 'student',
+    password: hashedPassword,
+    createdAt: new Date().toISOString(),
+  };
+  users.push(newUser);
+  saveLocalUsers(users);
+  return newUser;
+};
+
+const verifyPassword = async (user, candidatePassword) => {
+  if (user && typeof user.comparePassword === 'function') {
+    return await user.comparePassword(candidatePassword);
+  }
+  if (user && user.password) {
+    return await bcrypt.compare(candidatePassword, user.password);
+  }
+  return false;
+};
 
 // ── Helper: generate JWT ───────────────────────────────
 const generateToken = (user) => {
   return jwt.sign(
-    { id: user._id, name: user.name, role: user.role },
+    { id: user._id || user.id, name: user.name, role: user.role, classLevel: user.classLevel },
     JWT_SECRET,
     { expiresIn: '7d' }
   );
@@ -39,12 +119,10 @@ app.post('/api/auth/register', async (req, res) => {
   try {
     const { name, school, classLevel, password, role, adminSecret } = req.body;
 
-    // Validate required fields
     if (!name || !password) {
       return res.status(400).json({ message: 'Name and password are required.' });
     }
 
-    // If teacher, validate admin secret
     if (role === 'teacher') {
       const envSecret = process.env.ADMIN_SECRET_KEY;
       if (!envSecret || adminSecret !== envSecret) {
@@ -52,14 +130,12 @@ app.post('/api/auth/register', async (req, res) => {
       }
     }
 
-    // Check if user already exists
-    const existingUser = await User.findOne({ name });
+    const existingUser = await findUserByName(name);
     if (existingUser) {
       return res.status(409).json({ message: 'A user with this name already exists.' });
     }
 
-    // Create user
-    const user = await User.create({
+    const user = await createUser({
       name,
       school: school || '',
       classLevel: classLevel || '10',
@@ -72,7 +148,7 @@ app.post('/api/auth/register', async (req, res) => {
     res.status(201).json({
       token,
       user: {
-        id: user._id,
+        id: user._id || user.id,
         name: user.name,
         school: user.school,
         classLevel: user.classLevel,
@@ -94,12 +170,12 @@ app.post('/api/auth/login', async (req, res) => {
       return res.status(400).json({ message: 'Name and password are required.' });
     }
 
-    const user = await User.findOne({ name });
+    const user = await findUserByName(name);
     if (!user) {
       return res.status(401).json({ message: 'Invalid credentials. User not found.' });
     }
 
-    const isMatch = await user.comparePassword(password);
+    const isMatch = await verifyPassword(user, password);
     if (!isMatch) {
       return res.status(401).json({ message: 'Invalid credentials. Wrong password.' });
     }
@@ -109,7 +185,7 @@ app.post('/api/auth/login', async (req, res) => {
     res.json({
       token,
       user: {
-        id: user._id,
+        id: user._id || user.id,
         name: user.name,
         school: user.school,
         classLevel: user.classLevel,
@@ -153,16 +229,20 @@ app.use((err, req, res, next) => {
   next();
 });
 
-// ── Connect to MongoDB and start ───────────────────────
-mongoose
-  .connect(process.env.MONGO_URI)
-  .then(() => {
-    console.log('✅ MongoDB connected successfully');
-    app.listen(PORT, () => {
-      console.log(`🚀 Server running on http://localhost:${PORT}`);
+// ── Start Server & Connect to MongoDB ──────────────────
+app.listen(PORT, () => {
+  console.log(`🚀 Server running on http://localhost:${PORT}`);
+});
+
+if (process.env.MONGO_URI) {
+  mongoose
+    .connect(process.env.MONGO_URI, { family: 4, serverSelectionTimeoutMS: 5000 })
+    .then(() => {
+      console.log('✅ MongoDB connected successfully');
+    })
+    .catch((err) => {
+      console.error('⚠️ MongoDB connection error:', err.message);
     });
-  })
-  .catch((err) => {
-    console.error('❌ MongoDB connection error:', err.message);
-    process.exit(1);
-  });
+} else {
+  console.warn('⚠️ MONGO_URI is missing in environment configuration.');
+}

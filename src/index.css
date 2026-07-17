@@ -1,9 +1,9 @@
 @import "tailwindcss";
 
 @theme {
-  --color-navy-900: #0a192f;
-  --color-navy-800: #112240;
-  --color-navy-700: #233554;
+  --color-navy-900: #020612;
+  --color-navy-800: #060d21;
+  --color-navy-700: #0f172a;
   --color-purple-900: #6b21a8;
   --color-purple-800: #7e22ce;
   --color-purple-700: #9333ea;
@@ -15,7 +15,7 @@
 @layer base {
   body {
     @apply bg-navy-900 text-slate-100 antialiased overflow-x-hidden min-h-screen;
-    background: radial-gradient(circle at top, #112240 0%, #0a192f 100%);
+    background: radial-gradient(circle at top, #060d21 0%, #020612 100%);
   }
   
   h1, h2, h3, h4, h5, h6 {
