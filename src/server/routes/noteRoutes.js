@@ -5,7 +5,7 @@ import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import Note from '../models/Note.js';
 import roleCheck from '../middleware/roleCheck.js';
-import upload from '../config/cloudinary.js';
+import upload, { uploadToCloudinary } from '../config/cloudinary.js';
 
 const router = express.Router();
 const __filename = fileURLToPath(import.meta.url);
@@ -55,22 +55,20 @@ router.get('/', async (req, res) => {
 });
 
 // POST /api/notes - Create Note (Teacher Only)
-router.post('/', roleCheck, (req, res, next) => {
-  upload.single('file')(req, res, (err) => {
-    if (err) console.warn('Multer upload warning:', err.message);
-    next();
-  });
-}, async (req, res) => {
+router.post('/', roleCheck, upload.single('file'), async (req, res) => {
   try {
     const { title, classLevel, category } = req.body;
-    
+
     if (!req.file) {
       return res.status(400).json({ message: 'No file uploaded.' });
     }
 
-    const fileUrl = req.file.path.startsWith('http') 
-      ? req.file.path 
-      : `http://localhost:5000${req.file.path}`;
+    let fileUrl;
+    try {
+      fileUrl = await uploadToCloudinary(req.file.buffer, req.file.originalname);
+    } catch (cloudErr) {
+      return res.status(500).json({ message: cloudErr.message });
+    }
 
     if (mongoose.connection.readyState === 1) {
       try {
@@ -104,6 +102,7 @@ router.post('/', roleCheck, (req, res, next) => {
     res.status(500).json({ message: err.message });
   }
 });
+
 
 // PUT /api/notes/:id - Update Note (Teacher Only)
 router.put('/:id', roleCheck, async (req, res) => {

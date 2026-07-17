@@ -2,19 +2,13 @@ import dotenv from 'dotenv';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import { v2 as cloudinary } from 'cloudinary';
-import { CloudinaryStorage } from 'multer-storage-cloudinary';
 import multer from 'multer';
-import fs from 'fs';
+import streamifier from 'streamifier';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 dotenv.config({ path: join(__dirname, '..', '.env') });
 dotenv.config();
-
-const uploadsDir = join(__dirname, '..', 'uploads');
-if (!fs.existsSync(uploadsDir)) {
-  fs.mkdirSync(uploadsDir, { recursive: true });
-}
 
 const checkCloudinaryKeys = () => {
   return Boolean(
@@ -32,57 +26,33 @@ if (checkCloudinaryKeys()) {
   });
 }
 
-const cloudinaryStorage = new CloudinaryStorage({
-  cloudinary: cloudinary,
-  params: {
-    folder: 'mathematics-for-mankind/notes',
-    allowed_formats: ['pdf', 'jpg', 'jpeg', 'png', 'gif'],
-    resource_type: 'auto'
-  }
+// Use memory storage — we'll upload buffer to Cloudinary manually
+const storage = multer.memoryStorage();
+
+const upload = multer({
+  storage,
+  limits: { fileSize: 20 * 1024 * 1024 } // 20MB limit
 });
 
-const localStorage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, uploadsDir);
-  },
-  filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
-    cb(null, uniqueSuffix + '-' + file.originalname);
-  }
-});
-
-const customStorage = {
-  _handleFile(req, file, cb) {
-    if (checkCloudinaryKeys()) {
-      cloudinaryStorage._handleFile(req, file, (err, info) => {
-        if (err) {
-          console.warn('Cloudinary upload warning, using local storage:', err.message);
-          return localStorage._handleFile(req, file, (lErr, lInfo) => {
-            if (lErr) return cb(lErr);
-            lInfo.path = `/uploads/${lInfo.filename}`;
-            cb(null, lInfo);
-          });
-        }
-        cb(null, info);
-      });
-    } else {
-      localStorage._handleFile(req, file, (err, info) => {
-        if (err) return cb(err);
-        info.path = `/uploads/${info.filename}`;
-        cb(null, info);
-      });
+// Helper: upload a buffer to Cloudinary and return the secure URL
+export const uploadToCloudinary = (buffer, originalname) => {
+  return new Promise((resolve, reject) => {
+    if (!checkCloudinaryKeys()) {
+      return reject(new Error('Cloudinary credentials are not configured on the server.'));
     }
-  },
-  _removeFile(req, file, cb) {
-    if (checkCloudinaryKeys()) {
-      cloudinaryStorage._removeFile(req, file, cb);
-    } else {
-      localStorage._removeFile(req, file, cb);
-    }
-  }
+    const stream = cloudinary.uploader.upload_stream(
+      {
+        folder: 'mathematics-for-mankind/notes',
+        resource_type: 'auto',
+        public_id: `${Date.now()}-${originalname.replace(/[^a-z0-9]/gi, '_')}`
+      },
+      (error, result) => {
+        if (error) return reject(error);
+        resolve(result.secure_url);
+      }
+    );
+    streamifier.createReadStream(buffer).pipe(stream);
+  });
 };
 
-const upload = multer({ storage: customStorage });
-
 export default upload;
-
