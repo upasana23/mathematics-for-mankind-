@@ -169,6 +169,11 @@ router.post('/ai-solve', async (req, res) => {
     }
 
     const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) {
+      return res.status(500).json({
+        message: 'GEMINI_API_KEY is not configured in Render environment variables. Please add GEMINI_API_KEY in your Render Dashboard -> Environment tab.'
+      });
+    }
     const isHintMode = mode !== 'solution';
 
     const NO_LATEX_RULE = `

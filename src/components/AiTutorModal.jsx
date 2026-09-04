@@ -72,6 +72,10 @@ Structure your response into:
 4. 💡 Exam Tip & Common Pitfalls to Avoid
 Explain every calculation clearly so the student masters the method thoroughly.${NO_LATEX_RULE}`;
 
+  if (!GEMINI_API_KEY) {
+    throw new Error('GEMINI_API_KEY is not configured in environment variables. Please add GEMINI_API_KEY to your Render Dashboard Environment.');
+  }
+
   const parts = [];
   if (imageBase64) {
     const cleanBase64 = imageBase64.replace(/^data:image\/\w+;base64,/, '');
@@ -156,14 +160,24 @@ const AiTutorModal = ({ isOpen, onClose, doubtText = '', image = null }) => {
       });
 
       const contentType = res.headers.get('content-type') || '';
-      if (res.ok && contentType.includes('application/json')) {
+      if (contentType.includes('application/json')) {
         const data = await res.json();
-        if (data.answer) {
+        if (res.ok && data.answer) {
           answerText = data.answer;
+        } else if (!res.ok && data.message) {
+          throw new Error(data.message);
         }
+      } else if (!res.ok) {
+        throw new Error(`Server returned status ${res.status}`);
       }
     } catch (backendErr) {
-      console.warn('Backend AI endpoint attempt skipped, switching to direct Gemini:', backendErr.message);
+      console.warn('Backend AI endpoint returned error:', backendErr.message);
+      // If the error was explicitly from the backend about configuration, report it
+      if (backendErr.message && (backendErr.message.includes('GEMINI_API_KEY') || backendErr.message.includes('API key'))) {
+        setError(backendErr.message);
+        setIsLoading(false);
+        return;
+      }
     }
 
     // 2. Direct client fallback to Gemini if backend is offline or un-restarted
