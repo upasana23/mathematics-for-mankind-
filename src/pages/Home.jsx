@@ -5,6 +5,9 @@ import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { motion } from 'framer-motion';
 import { Play } from 'lucide-react';
 import { youtubeVideos, books } from '../data/mockData';
+import API_BASE from '../config/api';
+
+const VIDEOS_STORAGE_KEY = 'mfm_latest_youtube_videos';
 
 const MATH_EQUATIONS = [
   'e^(i*π) + 1 = 0',
@@ -344,27 +347,130 @@ const HeroBackground = () => (
 
 const Home = () => {
   const navigate = useNavigate();
-  const [videos, setVideos] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [videos, setVideos] = useState(() => {
+    try {
+      const cached = localStorage.getItem(VIDEOS_STORAGE_KEY);
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (Array.isArray(parsed.videos) && parsed.videos.length > 0) {
+          return parsed.videos.slice(0, 3);
+        }
+      }
+    } catch {
+      // ignore storage errors
+    }
+    return [];
+  });
+  const [loading, setLoading] = useState(() => videos.length === 0);
 
   useEffect(() => {
+    let isMounted = true;
+
     const fetchVideos = async () => {
       try {
-        const channelId = 'UC_Vh4We28mI7QMZsI61ZM6g';
-        const rssUrl = `https://www.youtube.com/feeds/videos.xml?channel_id=${channelId}`;
-        const apiUrl = `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(rssUrl)}`;
-        const response = await fetch(apiUrl);
-        const data = await response.json();
-        if (data.status === 'ok') {
-          setVideos(data.items.slice(0, 3)); // Get latest 3
+        // 1. Fetch from backend endpoint with 3.5s timeout
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 3500);
+
+        const response = await fetch(`${API_BASE}/api/youtube/latest`, {
+          signal: controller.signal,
+        });
+        clearTimeout(timeoutId);
+
+        if (response.ok) {
+          const data = await response.json();
+          if (data.videos && data.videos.length > 0) {
+            const top3 = data.videos.slice(0, 3);
+            if (isMounted) {
+              setVideos(top3);
+              setLoading(false);
+            }
+            try {
+              localStorage.setItem(
+                VIDEOS_STORAGE_KEY,
+                JSON.stringify({ videos: top3, timestamp: Date.now() })
+              );
+            } catch {
+              // ignore
+            }
+            return;
+          }
         }
-      } catch (error) {
-        console.error('Error fetching YouTube videos:', error);
-      } finally {
-        setLoading(false);
+        throw new Error('Backend video endpoint did not return videos');
+      } catch (backendError) {
+        // If we already have cached videos in state, don't flash to fallback
+        if (videos.length > 0) {
+          if (isMounted) setLoading(false);
+          return;
+        }
+
+        // 2. Fallback: try codetabs proxy with strict 2.5s timeout
+        try {
+          const channelId = 'UC_Vh4We28mI7QMZsI61ZM6g';
+          const rssUrl = `https://www.youtube.com/feeds/videos.xml?channel_id=${channelId}`;
+          const proxyUrl = `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(rssUrl)}`;
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 2500);
+
+          const proxyRes = await fetch(proxyUrl, { signal: controller.signal });
+          clearTimeout(timeoutId);
+
+          if (proxyRes.ok) {
+            const xmlText = await proxyRes.text();
+            const parser = new DOMParser();
+            const xmlDoc = parser.parseFromString(xmlText, 'text/xml');
+            const entries = xmlDoc.querySelectorAll('entry');
+            const parsedVideos = Array.from(entries).slice(0, 3).map((entry) => {
+              const videoId = entry.getElementsByTagNameNS('*', 'videoId')[0]?.textContent;
+              return {
+                guid: videoId || entry.querySelector('id')?.textContent,
+                link: entry.querySelector('link')?.getAttribute('href') || (videoId ? `https://www.youtube.com/watch?v=${videoId}` : 'https://www.youtube.com/@mathematicsformankind-onlinecl/videos'),
+                thumbnail: videoId ? `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg` : 'https://images.unsplash.com/photo-1635070041078-e363dbe005cb?auto=format&fit=crop&q=80&w=400',
+                title: entry.querySelector('title')?.textContent || 'Mathematics Lecture',
+                pubDate: entry.querySelector('published')?.textContent || new Date().toISOString(),
+              };
+            });
+
+            if (parsedVideos.length > 0) {
+              if (isMounted) {
+                setVideos(parsedVideos);
+                setLoading(false);
+              }
+              try {
+                localStorage.setItem(
+                  VIDEOS_STORAGE_KEY,
+                  JSON.stringify({ videos: parsedVideos, timestamp: Date.now() })
+                );
+              } catch {
+                // ignore
+              }
+              return;
+            }
+          }
+        } catch {
+          // Ignore and proceed to immediate fallback
+        }
+
+        // 3. Fallback to curated channel videos immediately without waiting
+        if (isMounted) {
+          setVideos(
+            youtubeVideos.map((v) => ({
+              guid: v.id,
+              link: 'https://www.youtube.com/@mathematicsformankind-onlinecl/videos',
+              thumbnail: 'https://images.unsplash.com/photo-1635070041078-e363dbe005cb?auto=format&fit=crop&q=80&w=400',
+              title: v.title,
+              pubDate: new Date().toISOString(),
+            }))
+          );
+          setLoading(false);
+        }
       }
     };
+
     fetchVideos();
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   return (
@@ -379,7 +485,7 @@ const Home = () => {
              animate={{ opacity: 1, y: 0 }}
              transition={{ duration: 0.8 }}
            >
-             <h1 className="text-5xl md:text-7xl font-bold mb-6 glow-text tracking-tight animate-pulse-slow">
+             <h1 className="text-4xl sm:text-5xl md:text-7xl font-bold mb-6 glow-text tracking-tight animate-pulse-slow">
                Mathematics <br />
                <span className="text-gradient font-sans">for Mankind</span>
              </h1>
@@ -387,16 +493,16 @@ const Home = () => {
                Explore the beauty of the universe through the language of mathematics.
                Join our journey to unlock the secrets of geometry, calculus, and beyond.
              </p>
-             <div className="flex flex-wrap justify-center lg:justify-start gap-4">
+             <div className="flex flex-col sm:flex-row flex-wrap justify-center lg:justify-start gap-4">
                <button 
                  onClick={() => navigate('/portal')}
-                 className="px-8 py-4 rounded-xl font-bold bg-white text-navy-900 hover:bg-slate-200 transition-colors shadow-lg hover:shadow-white/20 cursor-pointer"
+                 className="w-full sm:w-auto px-8 py-4 rounded-xl font-bold bg-white text-navy-900 hover:bg-slate-200 transition-colors shadow-lg hover:shadow-white/20 cursor-pointer"
                >
                  Start Learning
                </button>
                <button 
                  onClick={() => window.open('https://www.youtube.com/@mathematicsformankind-onlinecl/featured', '_blank')}
-                 className="px-8 py-4 rounded-xl font-bold glass glass-hover text-white cursor-pointer"
+                 className="w-full sm:w-auto px-8 py-4 rounded-xl font-bold glass glass-hover text-white cursor-pointer"
                >
                  Explore Library
                </button>
@@ -419,21 +525,25 @@ const Home = () => {
               {loading ? (
                 <div className="text-center py-8 text-slate-400">Loading latest videos...</div>
               ) : videos.length > 0 ? (
-                videos.map((video) => (
+                videos.slice(0, 3).map((video) => (
                   <motion.div
                     key={video.guid}
                     whileHover={{ scale: 1.02, x: 5 }}
                     onClick={() => window.open(video.link, '_blank')}
-                    className="flex gap-4 p-3 rounded-xl glass glass-hover cursor-pointer items-center relative z-10"
+                    className="flex flex-col xs:flex-row gap-4 p-3 rounded-xl glass glass-hover cursor-pointer items-center relative z-10"
                   >
-                    <div className={`w-32 h-20 rounded-lg shrink-0 bg-navy-900 flex items-center justify-center glow-border relative overflow-hidden`}>
-                      <img src={video.thumbnail} alt={video.title} className="absolute inset-0 w-full h-full object-cover opacity-80" />
+                    <div className={`w-full xs:w-32 h-32 xs:h-20 rounded-lg shrink-0 bg-navy-900 flex items-center justify-center glow-border relative overflow-hidden`}>
+                      {video.thumbnail.startsWith('http') ? (
+                        <img src={video.thumbnail} alt={video.title} className="absolute inset-0 w-full h-full object-cover opacity-80" />
+                      ) : (
+                        <div className={`absolute inset-0 w-full h-full opacity-80 ${video.thumbnail}`} />
+                      )}
                       <div className="absolute inset-0 bg-black/30" />
                       <Play className="text-white w-8 h-8 z-10 opacity-90 drop-shadow-lg" />
                     </div>
-                    <div className="text-left flex-1 min-w-0">
-                      <h4 className="font-bold text-slate-100 line-clamp-2 leading-tight" dangerouslySetInnerHTML={{ __html: video.title }}></h4>
-                      <p className="text-sm text-purple-300 mt-2">{new Date(video.pubDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</p>
+                    <div className="text-center xs:text-left flex-1 min-w-0">
+                      <h4 className="font-bold text-slate-100 line-clamp-2 leading-tight text-sm sm:text-base" dangerouslySetInnerHTML={{ __html: video.title }}></h4>
+                      <p className="text-xs sm:text-sm text-purple-300 mt-2">{new Date(video.pubDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</p>
                     </div>
                   </motion.div>
                 ))
@@ -458,7 +568,7 @@ const Home = () => {
             <p className="text-slate-400 max-w-2xl mx-auto">Discover comprehensive guides and texts exploring the frontiers of numerical knowledge.</p>
           </motion.div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 px-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 px-4">
             {books.map((book, i) => (
               <motion.div
                 key={book.id}

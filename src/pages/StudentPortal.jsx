@@ -51,7 +51,7 @@ const StudentPortal = () => {
         variants={containerVariants}
         initial="hidden"
         animate="show"
-        className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6"
+        className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6"
       >
         {classes.map((cls) => {
           const isUserClass = user && Number(user.classLevel) === cls.id;
@@ -61,11 +61,11 @@ const StudentPortal = () => {
               <Link to={`/portal/${cls.id}`}>
                 <motion.div 
                   whileHover={{ scale: 1.05, y: -5 }}
-                  whileTap={{ scale: 0.95 }}
-                  className={`flex flex-col items-center justify-center h-40 rounded-2xl bg-gradient-to-br ${cls.color} shadow-lg hover:shadow-[0_10px_30px_rgba(107,33,168,0.5)] transition-all cursor-pointer relative overflow-hidden group`}
+                  whileTap={{ scale: 0.96 }}
+                  className={`flex flex-col items-center justify-center h-32 sm:h-40 rounded-2xl bg-gradient-to-br ${cls.color} shadow-lg hover:shadow-[0_10px_30px_rgba(107,33,168,0.5)] transition-all cursor-pointer relative overflow-hidden group`}
                 >
                 <div className="absolute inset-x-0 top-0 h-1/2 bg-white/20 pointer-events-none skew-y-12 transform origin-top-left -translate-y-8 group-hover:translate-y-0 transition-transform duration-500" />
-                <span className="text-3xl font-bold font-serif text-white z-10 drop-shadow-md">
+                <span className="text-2xl sm:text-3xl font-bold font-serif text-white z-10 drop-shadow-md">
                   {cls.label}
                 </span>
                 <div className="absolute bottom-4 opacity-0 group-hover:opacity-100 transition-opacity z-10 text-white/80 font-medium text-sm">

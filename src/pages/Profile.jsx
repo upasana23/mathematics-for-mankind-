@@ -29,9 +29,9 @@ const Profile = () => {
           <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] opacity-30"></div>
         </div>
         
-        <div className="px-8 pb-8 relative">
-          <div className="flex flex-col sm:flex-row items-center sm:items-end -mt-16 sm:-mt-12 mb-8 gap-6">
-            <div className="w-32 h-32 rounded-full bg-navy-900 border-4 border-slate-800 flex items-center justify-center shadow-2xl relative z-10 shrink-0">
+        <div className="px-4 sm:px-8 pb-6 sm:pb-8 relative">
+          <div className="flex flex-col sm:flex-row items-center sm:items-end -mt-16 sm:-mt-12 mb-8 gap-4 sm:gap-6">
+            <div className="w-28 h-28 sm:w-32 sm:h-32 rounded-full bg-navy-900 border-4 border-slate-800 flex items-center justify-center shadow-2xl relative z-10 shrink-0">
               <User className="w-16 h-16 text-slate-400" />
             </div>
             <div className="text-center sm:text-left pt-14 sm:pt-0">

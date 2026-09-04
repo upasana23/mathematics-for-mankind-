@@ -177,7 +177,7 @@ const ClassDetails = () => {
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             onClick={() => setIsUploadModalOpen(true)}
-            className="flex items-center justify-center space-x-2 px-6 py-3 bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-bold rounded-xl shadow-lg shadow-purple-500/20"
+            className="flex w-full md:w-auto items-center justify-center space-x-2 px-6 py-3 bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-bold rounded-xl shadow-lg shadow-purple-500/20"
           >
             <Plus size={20} />
             <span>Add New Note</span>
@@ -205,19 +205,19 @@ const ClassDetails = () => {
                 </div>
               </div>
 
-              <div className="flex items-center space-x-3 sm:ml-auto">
+              <div className="flex flex-wrap sm:flex-nowrap items-center gap-3 sm:space-x-3 sm:ml-auto w-full sm:w-auto mt-2 sm:mt-0">
                 <a 
                   href={note.fileUrl} 
                   target="_blank" 
                   rel="noopener noreferrer"
-                  className="flex items-center space-x-2 px-5 py-2 rounded-lg bg-teal-500/10 text-teal-300 hover:bg-teal-500/20 border border-teal-500/20 transition-all font-medium"
+                  className="flex-1 sm:flex-none flex items-center justify-center space-x-2 px-5 py-2 rounded-lg bg-teal-500/10 text-teal-300 hover:bg-teal-500/20 border border-teal-500/20 transition-all font-medium"
                 >
                   <Upload size={18} className="rotate-180" />
                   <span>Download / View</span>
                 </a>
 
                 {user?.role === 'teacher' && (
-                  <div className="flex items-center space-x-2 border-l border-white/10 pl-3 ml-2">
+                  <div className="flex items-center space-x-2 border-l border-white/10 pl-3">
                     <button 
                       onClick={() => handleEditClick(note)}
                       className="p-2 text-slate-400 hover:text-white hover:bg-white/5 rounded-lg transition-colors"
@@ -261,7 +261,7 @@ const ClassDetails = () => {
               initial={{ scale: 0.9, opacity: 0, y: 20 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.9, opacity: 0, y: 20 }}
-              className="relative w-full max-w-md glass-panel p-8 overflow-hidden"
+              className="relative w-full max-w-md glass-panel p-6 sm:p-8 overflow-hidden max-h-[90vh] overflow-y-auto custom-scrollbar"
             >
               <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-purple-500 via-indigo-500 to-teal-500" />
               
@@ -376,7 +376,7 @@ const ClassDetails = () => {
               initial={{ scale: 0.9, opacity: 0, y: 20 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.9, opacity: 0, y: 20 }}
-              className="relative w-full max-w-md glass-panel p-8 overflow-hidden"
+              className="relative w-full max-w-md glass-panel p-6 sm:p-8 overflow-hidden max-h-[90vh] overflow-y-auto custom-scrollbar"
             >
               <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-purple-500 via-indigo-500 to-teal-500" />
               
@@ -454,7 +454,7 @@ const ClassDetails = () => {
               initial={{ scale: 0.9, opacity: 0, y: 20 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.9, opacity: 0, y: 20 }}
-              className="relative w-full max-w-sm glass-panel p-6 overflow-hidden text-center z-10"
+              className="relative w-full max-w-sm glass-panel p-6 overflow-hidden text-center z-10 max-h-[90vh] overflow-y-auto custom-scrollbar"
             >
               <div className="w-16 h-16 bg-red-500/20 text-red-400 rounded-full flex items-center justify-center mx-auto mb-4 border border-red-500/30">
                 <Trash2 size={28} />

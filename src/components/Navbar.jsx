@@ -1,11 +1,13 @@
+import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { BookOpen, LogIn, LogOut, MessageCircleQuestion, GraduationCap, User } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { BookOpen, LogIn, LogOut, MessageCircleQuestion, GraduationCap, User, Menu, X } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 const Navbar = () => {
   const { user, isAuthenticated, login, logout } = useAuth();
   const location = useLocation();
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const navLinks = [
     { name: 'Home', path: '/', icon: BookOpen },
@@ -30,6 +32,7 @@ const Navbar = () => {
             </span>
           </Link>
 
+          {/* Desktop Navigation */}
           <div className="hidden md:flex space-x-8 items-center">
             {navLinks.map((link) => {
               const Icon = link.icon;
@@ -73,15 +76,99 @@ const Navbar = () => {
             ) : (
               <Link
                 to="/login"
-                className="flex items-center space-x-2 px-4 py-2 rounded-lg bg-gradient-to-r from-purple-600 to-indigo-600 text-white hover:from-purple-500 hover:to-indigo-500 transition-all shadow-[0_0_15px_rgba(107,33,168,0.5)] hover:shadow-[0_0_25px_rgba(107,33,168,0.7)]"
+                className="hidden md:flex items-center space-x-2 px-4 py-2 rounded-lg bg-gradient-to-r from-purple-600 to-indigo-600 text-white hover:from-purple-500 hover:to-indigo-500 transition-all shadow-[0_0_15px_rgba(107,33,168,0.5)] hover:shadow-[0_0_25px_rgba(107,33,168,0.7)]"
               >
                 <LogIn size={18} />
                 <span>Student Login</span>
               </Link>
             )}
+
+            {/* Mobile Menu Toggle Button */}
+            <button
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              className="md:hidden ml-4 p-2 text-slate-300 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
+            >
+              {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+            </button>
           </div>
         </div>
       </div>
+
+      {/* Mobile Navigation Drawer */}
+      <AnimatePresence>
+        {isMobileMenuOpen && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            className="md:hidden glass border-b border-white/10 overflow-hidden"
+          >
+            <div className="px-4 pt-2 pb-6 space-y-2">
+              {navLinks.map((link) => {
+                const Icon = link.icon;
+                const isActive = location.pathname === link.path || (location.pathname.startsWith(link.path) && link.path !== '/');
+                return (
+                  <Link
+                    key={link.name}
+                    to={link.path}
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className={`flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-300 ${
+                      isActive ? 'text-purple-400 bg-white/10' : 'text-slate-300 hover:text-white hover:bg-white/5'
+                    }`}
+                  >
+                    <Icon size={20} />
+                    <span className="font-medium text-lg">{link.name}</span>
+                  </Link>
+                );
+              })}
+
+              <div className="pt-4 mt-4 border-t border-white/10 space-y-3">
+                {isAuthenticated ? (
+                  <>
+                    {user?.role === 'teacher' && (
+                      <Link
+                        to="/teacher-dashboard"
+                        onClick={() => setIsMobileMenuOpen(false)}
+                        className="flex items-center space-x-3 px-4 py-3 rounded-xl bg-teal-500/10 text-teal-400 hover:bg-teal-500/20 border border-teal-500/30 transition-all"
+                      >
+                        <BookOpen size={20} />
+                        <span className="font-medium text-lg">Admin Dashboard</span>
+                      </Link>
+                    )}
+                    <Link
+                      to="/profile"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                      className="flex items-center space-x-3 px-4 py-3 rounded-xl bg-indigo-500/10 text-indigo-400 hover:bg-indigo-500/20 border border-indigo-500/30 transition-all"
+                    >
+                      <User size={20} />
+                      <span className="font-medium text-lg">Profile</span>
+                    </Link>
+                    <button
+                      onClick={() => {
+                        logout();
+                        setIsMobileMenuOpen(false);
+                      }}
+                      className="w-full flex items-center space-x-3 px-4 py-3 rounded-xl bg-red-500/10 text-red-400 hover:bg-red-500/20 hover:text-red-300 transition-colors border border-red-500/30"
+                    >
+                      <LogOut size={20} />
+                      <span className="font-medium text-lg">Logout</span>
+                    </button>
+                  </>
+                ) : (
+                  <Link
+                    to="/login"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className="flex items-center justify-center space-x-2 px-4 py-3 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 text-white hover:from-purple-500 hover:to-indigo-500 transition-all shadow-[0_0_15px_rgba(107,33,168,0.5)]"
+                  >
+                    <LogIn size={20} />
+                    <span className="font-medium text-lg">Student Login</span>
+                  </Link>
+                )}
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </nav>
   );
 };

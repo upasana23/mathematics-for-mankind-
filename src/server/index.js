@@ -1,6 +1,14 @@
 import dotenv from 'dotenv';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
+import dns from 'dns';
+
+// Configure DNS to avoid querySrv ECONNREFUSED issues on Windows / certain ISPs
+try {
+  dns.setServers(['8.8.8.8', '8.8.4.4', '1.1.1.1']);
+} catch (dnsErr) {
+  console.warn('DNS server configuration fallback warning:', dnsErr.message);
+}
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -24,7 +32,8 @@ const JWT_SECRET = process.env.JWT_SECRET || 'mathematics-for-mankind-fallback-s
 
 // ── Middleware ──────────────────────────────────────────
 app.use(cors({ origin: true, credentials: true }));
-app.use(express.json());
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use('/uploads', express.static(join(__dirname, 'uploads')));
 
 // ── Helper: Local User Fallback Store ───────────────────
@@ -216,6 +225,88 @@ app.put('/api/solutions/:id', roleCheck, async (req, res) => {
 
 app.delete('/api/solutions/:id', roleCheck, async (req, res) => {
   res.json({ message: `Solution ${req.params.id} deleted by teacher.` });
+});
+
+// ── YouTube Latest Videos Route ────────────────────────
+let cachedYouTubeVideos = null;
+let lastYouTubeFetchTime = 0;
+const YOUTUBE_CACHE_DURATION = 30 * 60 * 1000; // 30 minutes cache
+
+app.get('/api/youtube/latest', async (req, res) => {
+  const now = Date.now();
+  if (cachedYouTubeVideos && (now - lastYouTubeFetchTime < YOUTUBE_CACHE_DURATION)) {
+    return res.json({ success: true, videos: cachedYouTubeVideos, source: 'cache' });
+  }
+
+  try {
+    const channelId = 'UC_Vh4We28mI7QMZsI61ZM6g';
+    const rssUrl = `https://www.youtube.com/feeds/videos.xml?channel_id=${channelId}`;
+    const response = await fetch(rssUrl, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+      },
+      signal: AbortSignal.timeout(5000),
+    });
+
+    if (!response.ok) {
+      throw new Error(`YouTube responded with HTTP ${response.status}`);
+    }
+
+    const xmlText = await response.text();
+    const entries = [];
+    const entryRegex = /<entry>([\s\S]*?)<\/entry>/g;
+    let match;
+
+    while ((match = entryRegex.exec(xmlText)) !== null && entries.length < 3) {
+      const entryXml = match[1];
+      const videoIdMatch = entryXml.match(/<yt:videoId>([\s\S]*?)<\/yt:videoId>/);
+      const titleMatch = entryXml.match(/<title>([\s\S]*?)<\/title>/);
+      const linkMatch = entryXml.match(/<link[^>]+href="([^"]+)"/);
+      const publishedMatch = entryXml.match(/<published>([\s\S]*?)<\/published>/);
+
+      const videoId = videoIdMatch ? videoIdMatch[1].trim() : '';
+      let title = titleMatch ? titleMatch[1] : '';
+      title = title
+        .replace(/&amp;/g, '&')
+        .replace(/&lt;/g, '<')
+        .replace(/&gt;/g, '>')
+        .replace(/&quot;/g, '"')
+        .replace(/&#39;/g, "'")
+        .trim();
+
+      const link = linkMatch ? linkMatch[1] : (videoId ? `https://www.youtube.com/watch?v=${videoId}` : 'https://www.youtube.com/@mathematicsformankind-onlinecl/videos');
+      const pubDate = publishedMatch ? publishedMatch[1].trim() : new Date().toISOString();
+      const thumbnail = videoId ? `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg` : 'https://images.unsplash.com/photo-1635070041078-e363dbe005cb?auto=format&fit=crop&q=80&w=400';
+
+      if (videoId || title) {
+        entries.push({
+          guid: videoId || String(entries.length),
+          link,
+          thumbnail,
+          title,
+          pubDate,
+        });
+      }
+    }
+
+    if (entries.length > 0) {
+      cachedYouTubeVideos = entries;
+      lastYouTubeFetchTime = now;
+      return res.json({ success: true, videos: entries, source: 'network' });
+    }
+
+    if (cachedYouTubeVideos) {
+      return res.json({ success: true, videos: cachedYouTubeVideos, source: 'stale-cache' });
+    }
+
+    throw new Error('No video entries found in channel feed');
+  } catch (err) {
+    console.error('YouTube RSS fetch warning:', err.message);
+    if (cachedYouTubeVideos) {
+      return res.json({ success: true, videos: cachedYouTubeVideos, source: 'stale-cache' });
+    }
+    return res.status(502).json({ success: false, message: err.message });
+  }
 });
 
 // ── Error Handling Middleware ─────────────────────────

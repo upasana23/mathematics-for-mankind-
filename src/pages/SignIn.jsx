@@ -70,7 +70,11 @@ const SignIn = () => {
         navigate('/portal');
       }
     } catch (err) {
-      setError(err.message);
+      if (err.message === 'Failed to fetch' || err.name === 'TypeError') {
+        setError('Cannot connect to the server. Please ensure the backend server is running on port 5000 (run "npm run server" or "npm run dev:all").');
+      } else {
+        setError(err.message || 'An unexpected error occurred. Please try again.');
+      }
     } finally {
       setIsLoading(false);
     }
@@ -81,7 +85,7 @@ const SignIn = () => {
       <motion.div 
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="w-full max-w-md glass-panel p-8 relative overflow-hidden"
+        className="w-full max-w-md glass-panel p-6 sm:p-8 relative overflow-hidden"
       >
         <div className="absolute -top-20 -right-20 w-40 h-40 bg-purple-500/20 rounded-full blur-3xl" />
         <div className="absolute -bottom-20 -left-20 w-40 h-40 bg-blue-500/20 rounded-full blur-3xl" />

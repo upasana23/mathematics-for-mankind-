@@ -243,7 +243,7 @@ const TeacherDashboard = () => {
                   key={doubt._id}
                   variants={itemVariants}
                   onClick={() => setSelectedDoubt(doubt)}
-                  className={`glass-panel p-5 border cursor-pointer hover:shadow-lg transition-all flex flex-col md:flex-row gap-4 relative overflow-hidden group ${selectedDoubt?._id === doubt._id ? 'border-purple-500 shadow-[0_0_15px_rgba(168,85,247,0.2)]' : 'border-white/5 hover:border-white/20'}`}
+                  className={`glass-panel p-4 sm:p-5 border cursor-pointer hover:shadow-lg transition-all flex flex-col sm:flex-row gap-3 sm:gap-4 relative overflow-hidden group ${selectedDoubt?._id === doubt._id ? 'border-purple-500 shadow-[0_0_15px_rgba(168,85,247,0.2)]' : 'border-white/5 hover:border-white/20'}`}
                 >
                   {/* Status Indicator Bar */}
                   <div className={`absolute top-0 left-1 w-1 h-full ${doubt.status === 'Pending' ? 'bg-amber-500' : 'bg-teal-500'}`} />
@@ -259,14 +259,14 @@ const TeacherDashboard = () => {
 
                     <p className="text-slate-200 font-medium line-clamp-2 mt-2">{doubt.title}</p>
 
-                    <div className="flex items-center text-xs text-slate-500 space-x-4 pt-2">
+                    <div className="flex flex-wrap items-center text-xs text-slate-500 gap-2 sm:space-x-4 pt-2">
                       <span className="flex items-center"><User size={12} className="mr-1" /> {doubt.studentName}</span>
                       <span>{new Date(doubt.createdAt).toLocaleDateString()}</span>
                       {doubt.imageUrl && <span className="flex items-center text-indigo-400"><ImageIcon size={12} className="mr-1" /> Image Attached</span>}
                     </div>
                   </div>
 
-                  <div className="hidden md:flex items-center justify-center shrink-0 w-10 text-slate-600 group-hover:text-purple-400 transition-colors">
+                  <div className="hidden sm:flex items-center justify-center shrink-0 w-10 text-slate-600 group-hover:text-purple-400 transition-colors">
                     <MoreVertical size={20} />
                   </div>
                 </motion.div>

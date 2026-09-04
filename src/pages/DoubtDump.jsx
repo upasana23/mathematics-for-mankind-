@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { UploadCloud, Image as ImageIcon, CheckCircle, Clock, Send, X, AlertCircle } from 'lucide-react';
+import { UploadCloud, Image as ImageIcon, CheckCircle, Clock, Send, X, AlertCircle, Sparkles } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import API_BASE from '../config/api';
+import AiTutorModal from '../components/AiTutorModal';
 
 const DoubtDump = () => {
   const { isAuthenticated, token } = useAuth();
@@ -15,6 +16,16 @@ const DoubtDump = () => {
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
+  const [aiModalOpen, setAiModalOpen] = useState(false);
+  const [aiDoubtText, setAiDoubtText] = useState('');
+  const [aiImage, setAiImage] = useState(null);
+
+  const handleOpenAiModal = (text = textDoubt, img = imagePreview) => {
+    if (!text && !img) return;
+    setAiDoubtText(text);
+    setAiImage(img);
+    setAiModalOpen(true);
+  };
 
   const fetchMyDoubts = async () => {
     if (!isAuthenticated) return;
@@ -110,7 +121,7 @@ const DoubtDump = () => {
   return (
     <div className="pt-24 pb-20 px-4 sm:px-6 lg:px-8 max-w-5xl mx-auto min-h-screen">
       <div className="text-center mb-12">
-        <h1 className="text-4xl md:text-5xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-teal-400 via-indigo-400 to-purple-500 mb-4 inline-block">
+        <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-teal-400 via-indigo-400 to-purple-500 mb-4 inline-block leading-tight sm:leading-normal">
           The Doubt Dump
         </h1>
         <p className="text-slate-400 text-lg">
@@ -195,14 +206,35 @@ const DoubtDump = () => {
                 )}
               </AnimatePresence>
 
-              <button 
-                type="submit"
-                disabled={!textDoubt.trim() && !imagePreview}
-                className="w-full flex items-center justify-center space-x-2 py-3 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-bold hover:from-purple-500 hover:to-indigo-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_0_15px_rgba(107,33,168,0.3)] hover:shadow-[0_0_20px_rgba(107,33,168,0.5)]"
-              >
-                <Send size={18} />
-                <span>Cast into the Void</span>
-              </button>
+              <div className="space-y-3 pt-2">
+                {/* 1st Priority: Submit to Teacher */}
+                <button 
+                  type="submit"
+                  disabled={(!textDoubt.trim() && !imagePreview) || isSubmitting}
+                  className="w-full flex items-center justify-center space-x-2 py-3.5 px-4 rounded-xl bg-gradient-to-r from-purple-600 via-indigo-600 to-purple-700 text-white font-bold hover:brightness-110 transition-all shadow-[0_0_20px_rgba(126,34,206,0.4)] disabled:opacity-40 disabled:cursor-not-allowed group cursor-pointer"
+                >
+                  <Send size={18} className="group-hover:translate-x-0.5 transition-transform" />
+                  <span>{isSubmitting ? 'Casting into the Void...' : 'Submit to Teacher (Cast into the Void)'}</span>
+                </button>
+
+                {/* Divider */}
+                <div className="relative flex items-center py-0.5">
+                  <div className="flex-grow border-t border-white/10" />
+                  <span className="flex-shrink mx-3 text-[11px] text-slate-500 uppercase tracking-wider font-semibold">or instant help</span>
+                  <div className="flex-grow border-t border-white/10" />
+                </div>
+
+                {/* 2nd Option: Solve on your own with AI */}
+                <button 
+                  type="button"
+                  onClick={() => handleOpenAiModal(textDoubt, imagePreview)}
+                  disabled={!textDoubt.trim() && !imagePreview}
+                  className="w-full flex items-center justify-center space-x-2 py-3 px-4 rounded-xl bg-teal-500/10 hover:bg-teal-500/20 border border-teal-500/30 hover:border-teal-400 text-teal-200 hover:text-white font-semibold transition-all disabled:opacity-40 disabled:cursor-not-allowed group cursor-pointer"
+                >
+                  <Sparkles className="w-4 h-4 text-yellow-300 animate-spin-slow group-hover:scale-110 transition-transform" />
+                  <span>Solve on your own with help of AI</span>
+                </button>
+              </div>
             </form>
           </div>
         </div>
@@ -231,10 +263,21 @@ const DoubtDump = () => {
                   </div>
                   <p className="text-sm text-slate-200 line-clamp-3 mb-2">{doubt.title}</p>
                   {doubt.imageUrl && (
-                    <div className="flex items-center text-xs text-indigo-400 bg-indigo-500/10 w-fit px-2 py-1 rounded border border-indigo-500/20">
+                    <div className="flex items-center text-xs text-indigo-400 bg-indigo-500/10 w-fit px-2 py-1 rounded border border-indigo-500/20 mb-2">
                       <ImageIcon size={12} className="mr-1" /> Image attached
                     </div>
                   )}
+                  <div className="pt-2 mt-1 border-t border-white/5 flex items-center justify-between">
+                    <button
+                      type="button"
+                      onClick={() => handleOpenAiModal(doubt.title, doubt.imageUrl)}
+                      className="flex items-center space-x-1 text-xs text-teal-300 hover:text-teal-200 font-medium py-1 px-2.5 rounded-lg bg-teal-500/10 hover:bg-teal-500/20 border border-teal-500/20 transition-all cursor-pointer"
+                    >
+                      <Sparkles size={12} className="text-yellow-300 mr-1" />
+                      <span>Solve with AI</span>
+                    </button>
+                    <span className="text-[11px] text-slate-500">Instant Hints</span>
+                  </div>
                 </motion.div>
               ))}
             </AnimatePresence>
@@ -257,7 +300,7 @@ const DoubtDump = () => {
               animate={{ scale: 1, y: 0 }}
               exit={{ scale: 0.9, y: 20 }}
               onClick={(e) => e.stopPropagation()}
-              className="bg-gradient-to-br from-indigo-900 via-purple-900 to-navy-900 rounded-3xl p-8 max-w-sm w-full shadow-2xl border border-purple-500/30 text-center relative overflow-hidden"
+              className="bg-gradient-to-br from-indigo-900 via-purple-900 to-navy-900 rounded-3xl p-6 sm:p-8 max-w-sm w-full shadow-2xl border border-purple-500/30 text-center relative overflow-hidden"
             >
               {/* Cute floating elements / stars */}
               <div className="absolute top-0 right-0 p-4 opacity-50 text-yellow-300 animate-pulse">✨</div>
@@ -282,7 +325,7 @@ const DoubtDump = () => {
               </p>
               
               <div className="space-y-3">
-                <Link to="/login" className="block w-full py-3 px-4 bg-gradient-to-r from-teal-400 to-emerald-500 hover:from-teal-300 hover:to-emerald-400 text-navy-900 font-bold rounded-xl shadow-[0_0_15px_rgba(45,212,191,0.4)] transition-all transform hover:-translate-y-1">
+                <Link to="/signin" className="block w-full py-3 px-4 bg-gradient-to-r from-teal-400 to-emerald-500 hover:from-teal-300 hover:to-emerald-400 text-navy-900 font-bold rounded-xl shadow-[0_0_15px_rgba(45,212,191,0.4)] transition-all transform hover:-translate-y-1">
                   Log In Now
                 </Link>
                 <button type="button" onClick={() => setShowLoginModal(false)} className="block w-full py-3 px-4 bg-white/5 hover:bg-white/10 text-slate-300 font-medium rounded-xl transition-colors">
@@ -294,6 +337,13 @@ const DoubtDump = () => {
         )}
       </AnimatePresence>
 
+      {/* AI Tutor Modal */}
+      <AiTutorModal
+        isOpen={aiModalOpen}
+        onClose={() => setAiModalOpen(false)}
+        doubtText={aiDoubtText}
+        image={aiImage}
+      />
     </div>
   );
 };

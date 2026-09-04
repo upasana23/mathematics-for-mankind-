@@ -43,5 +43,14 @@
     "role": "student",
     "password": "$2b$10$udMGH4bl0k/5kC.9xvmJNOTb5rccBeu.3figg9WHaT1Ngzcn6M33.",
     "createdAt": "2026-07-17T18:57:02.369Z"
+  },
+  {
+    "_id": "local_1788542301818",
+    "name": "upax2",
+    "school": "dps",
+    "classLevel": "10",
+    "role": "student",
+    "password": "$2b$10$KZe6jkhVNIUZXR3MWmlmJejT7BO0OiMznUAEOmpygXCTFO9Z8OUiO",
+    "createdAt": "2026-09-04T17:18:21.819Z"
   }
 ]

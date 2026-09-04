@@ -159,4 +159,97 @@ router.put('/:id/solve', auth, isTeacher, (req, res, next) => {
   }
 });
 
+// POST /api/doubts/ai-solve - Solve on your own with help of AI (Hints or Full Solution)
+router.post('/ai-solve', async (req, res) => {
+  try {
+    const { doubtText, imageBase64, mimeType, mode, userPrompt } = req.body;
+
+    if (!doubtText && !imageBase64) {
+      return res.status(400).json({ message: 'Please provide doubt description or upload an image.' });
+    }
+
+    const apiKey = process.env.GEMINI_API_KEY;
+    const isHintMode = mode !== 'solution';
+
+    const NO_LATEX_RULE = `
+
+IMPORTANT FORMATTING RULES (strictly follow):
+- Do NOT use LaTeX notation of any kind. Do NOT use \\( ... \\), \\[ ... \\], $...$ or $$ ... $$.
+- Do NOT use backslash commands like \\frac, \\sqrt, \\int, \\alpha, \\theta, \\cdot, etc.
+- Write all mathematical expressions in plain readable text. Examples:
+    - Instead of \\( x^2 + 5x + 6 = 0 \\), write: x^2 + 5x + 6 = 0
+    - Instead of \\( \\frac{a}{b} \\), write: a/b
+    - Instead of \\( \\sqrt{x} \\), write: sqrt(x)
+    - Instead of \\( \\alpha \\), write: alpha
+    - Instead of \\( \\int_0^1 x dx \\), write: integral from 0 to 1 of x dx
+- Do NOT use markdown bold (**text**) or italic (*text*).
+- You MAY use emoji section headers like 🎯, 💡, 🧭, ❓ as plain text labels.
+- Keep all output as clean, plain readable English text.`;
+
+    const systemInstruction = isHintMode
+      ? `You are an expert, encouraging Mathematics Teacher & Mentor at "Mathematics for Mankind".
+Your goal is: "Solve on your own with help of AI".
+DO NOT simply give away the final numerical answer or final expression immediately. Instead, guide the student with conceptual clues and hints so they can experience the joy of solving it themselves!
+Structure your guidance into these sections:
+1. 🎯 Core Concept: What fundamental theorem, formula, or mathematical property is this problem testing?
+2. 💡 Clue 1 (How to Start): What is the very first step to write on paper?
+3. 🧭 Clue 2 (Key Bridge): What intermediate equation or relationship connects the knowns to the unknowns?
+4. ❓ Self-Check Challenge: A probing question for the student to verify their work and arrive at the final answer themselves.
+End with a warm, motivating sentence.${NO_LATEX_RULE}`
+      : `You are a Master Mathematics Teacher at "Mathematics for Mankind".
+Provide a rigorous, clear, complete step-by-step solution and derivation.
+Structure your response into:
+1. 📐 Given & Target Objective
+2. 🔬 Step-by-Step Derivation & Calculations
+3. 🎯 Final Solution / Result
+4. 💡 Exam Tip & Common Pitfalls to Avoid
+Explain every calculation clearly so the student masters the method thoroughly.${NO_LATEX_RULE}`;
+
+    const parts = [];
+
+    // Support image analysis if imageBase64 is provided
+    if (imageBase64) {
+      const cleanBase64 = imageBase64.replace(/^data:image\/\w+;base64,/, '');
+      parts.push({
+        inlineData: {
+          mimeType: mimeType || 'image/jpeg',
+          data: cleanBase64,
+        },
+      });
+    }
+
+    const promptText = `${systemInstruction}\n\nStudent's Problem / Doubt:\n${doubtText || '(See attached math scratchpad/problem image)'}${userPrompt ? `\n\nStudent's specific question: ${userPrompt}` : ''}`;
+    parts.push({ text: promptText });
+
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key=${apiKey}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ parts }],
+      }),
+      signal: AbortSignal.timeout(25000),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.error?.message || `Gemini API returned HTTP ${response.status}`);
+    }
+
+    const aiAnswer = data.candidates?.[0]?.content?.parts?.[0]?.text;
+    if (!aiAnswer) {
+      throw new Error('Gemini did not return an answer.');
+    }
+
+    res.json({
+      success: true,
+      answer: aiAnswer,
+      mode: isHintMode ? 'hints' : 'solution',
+    });
+  } catch (err) {
+    console.error('AI Solve error:', err.message);
+    res.status(500).json({ message: `AI Tutor error: ${err.message}` });
+  }
+});
+
 export default router;
