@@ -210,6 +210,18 @@ const ClassDetails = () => {
                   href={note.fileUrl} 
                   target="_blank" 
                   rel="noopener noreferrer"
+                  onClick={() => {
+                    try {
+                      const saved = JSON.parse(localStorage.getItem('mfm_read_notes') || '[]');
+                      const noteId = note._id || note.id;
+                      if (noteId && !saved.includes(noteId)) {
+                        saved.push(noteId);
+                        localStorage.setItem('mfm_read_notes', JSON.stringify(saved));
+                      }
+                    } catch (e) {
+                      console.error('Error saving read note:', e);
+                    }
+                  }}
                   className="flex-1 sm:flex-none flex items-center justify-center space-x-2 px-5 py-2 rounded-lg bg-teal-500/10 text-teal-300 hover:bg-teal-500/20 border border-teal-500/20 transition-all font-medium"
                 >
                   <Upload size={18} className="rotate-180" />

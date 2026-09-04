@@ -1,13 +1,49 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { User, School, BookOpen, CheckCircle, GraduationCap } from 'lucide-react';
+import API_BASE from '../config/api';
 
 const Profile = () => {
-  const { user, updateProfile } = useAuth();
+  const { user, token, updateProfile } = useAuth();
   const [isEditingClass, setIsEditingClass] = useState(false);
   const [selectedClass, setSelectedClass] = useState(user?.classLevel || '10');
   const [showSuccessMessage, setShowSuccessMessage] = useState(false);
+  const [notesReadCount, setNotesReadCount] = useState(0);
+  const [doubtsSolvedCount, setDoubtsSolvedCount] = useState(0);
+
+  useEffect(() => {
+    if (user?.role === 'teacher') {
+      // For teacher: fetch notes posted count
+      fetch(`${API_BASE}/api/notes`)
+        .then((res) => res.json())
+        .then((data) => {
+          if (Array.isArray(data)) setNotesReadCount(data.length);
+        })
+        .catch((err) => console.error('Error fetching teacher notes stats:', err));
+    } else {
+      // For student: count read notes from localStorage
+      try {
+        const saved = JSON.parse(localStorage.getItem('mfm_read_notes') || '[]');
+        setNotesReadCount(Array.isArray(saved) ? saved.length : 0);
+      } catch (e) {
+        setNotesReadCount(0);
+      }
+    }
+
+    // Fetch doubts count
+    const endpoint = user?.role === 'teacher' ? '/api/doubts/admin' : '/api/doubts/my';
+    const headers = token ? { Authorization: `Bearer ${token}` } : {};
+    fetch(`${API_BASE}${endpoint}`, { headers })
+      .then((res) => res.json())
+      .then((data) => {
+        if (Array.isArray(data)) {
+          const solved = data.filter((d) => d.status === 'Solved').length;
+          setDoubtsSolvedCount(solved);
+        }
+      })
+      .catch((err) => console.error('Error fetching doubts stats:', err));
+  }, [user, token]);
 
   const handleUpdateClass = () => {
     updateProfile({ classLevel: selectedClass });
@@ -106,11 +142,11 @@ const Profile = () => {
               <h3 className="text-xl font-bold text-white border-b border-white/10 pb-2">Platform Stats</h3>
               <div className="grid grid-cols-2 gap-4">
                 <div className="p-4 rounded-xl bg-black/20 border border-white/5 text-center">
-                  <div className="text-3xl font-bold text-purple-400 mb-1">12</div>
-                  <div className="text-sm text-slate-400">Notes Read</div>
+                  <div className="text-3xl font-bold text-purple-400 mb-1">{notesReadCount}</div>
+                  <div className="text-sm text-slate-400">{user?.role === 'teacher' ? 'Notes Posted' : 'Notes Read'}</div>
                 </div>
                 <div className="p-4 rounded-xl bg-black/20 border border-white/5 text-center">
-                  <div className="text-3xl font-bold text-indigo-400 mb-1">5</div>
+                  <div className="text-3xl font-bold text-indigo-400 mb-1">{doubtsSolvedCount}</div>
                   <div className="text-sm text-slate-400">Doubts Solved</div>
                 </div>
               </div>

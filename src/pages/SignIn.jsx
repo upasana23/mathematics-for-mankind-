@@ -102,23 +102,25 @@ const SignIn = () => {
           </p>
         </div>
 
-        {/* Auth Mode Toggle */}
-        <div className="flex bg-black/40 p-1 rounded-xl mb-4 relative z-10 border border-white/5">
-          <button
-            type="button"
-            onClick={() => { setAuthMode('login'); setError(''); }}
-            className={`flex-1 py-2 text-sm font-bold rounded-lg transition-all ${authMode === 'login' ? 'bg-teal-500 text-white shadow-lg' : 'text-slate-400 hover:text-white'}`}
-          >
-            Login
-          </button>
-          <button
-            type="button"
-            onClick={() => { setAuthMode('register'); setError(''); }}
-            className={`flex-1 py-2 text-sm font-bold rounded-lg transition-all ${authMode === 'register' ? 'bg-teal-500 text-white shadow-lg' : 'text-slate-400 hover:text-white'}`}
-          >
-            Register
-          </button>
-        </div>
+        {/* Auth Mode Toggle - only shown for student since teacher registration is disabled */}
+        {loginRole === 'student' && (
+          <div className="flex bg-black/40 p-1 rounded-xl mb-4 relative z-10 border border-white/5">
+            <button
+              type="button"
+              onClick={() => { setAuthMode('login'); setError(''); }}
+              className={`flex-1 py-2 text-sm font-bold rounded-lg transition-all ${authMode === 'login' ? 'bg-teal-500 text-white shadow-lg' : 'text-slate-400 hover:text-white'}`}
+            >
+              Login
+            </button>
+            <button
+              type="button"
+              onClick={() => { setAuthMode('register'); setError(''); }}
+              className={`flex-1 py-2 text-sm font-bold rounded-lg transition-all ${authMode === 'register' ? 'bg-teal-500 text-white shadow-lg' : 'text-slate-400 hover:text-white'}`}
+            >
+              Register
+            </button>
+          </div>
+        )}
 
         {/* Role Toggle */}
         <div className="flex bg-black/40 p-1 rounded-xl mb-6 relative z-10 border border-white/5">
@@ -131,7 +133,11 @@ const SignIn = () => {
           </button>
           <button
             type="button"
-            onClick={() => setLoginRole('teacher')}
+            onClick={() => {
+              setLoginRole('teacher');
+              setAuthMode('login');
+              setError('');
+            }}
             className={`flex-1 py-2 text-sm font-bold rounded-lg transition-all ${loginRole === 'teacher' ? 'bg-purple-500 text-white shadow-lg' : 'text-slate-400 hover:text-white'}`}
           >
             Teacher
