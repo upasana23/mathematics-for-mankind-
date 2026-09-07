@@ -9,7 +9,7 @@ const noteSchema = new mongoose.Schema({
   classLevel: {
     type: String,
     required: true,
-    enum: ['6', '7', '8', '9', '10', '11', '12']
+    enum: ['5', '6', '7', '8', '9', '10', '11', '12']
   },
   fileUrl: {
     type: String,
@@ -18,12 +18,11 @@ const noteSchema = new mongoose.Schema({
   uploadedBy: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
-    required: true
+    required: false
   },
   category: {
     type: String,
     required: true,
-    enum: ['Vedic', 'Algebra', 'Geometry', 'Calculus', 'Other'],
     default: 'Other'
   }
 }, { timestamps: true });

@@ -19,13 +19,13 @@ const Navbar = () => {
     <nav className="fixed w-full z-50 glass top-0 left-0 border-b border-white/10">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-20">
-          <Link to="/" className="flex items-center space-x-2">
+          <Link to="/" className="flex items-center space-x-3 shrink-0 mr-3">
             <motion.div 
-              whileHover={{ rotate: 180 }}
-              transition={{ duration: 0.5 }}
-              className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center glow-border"
+              whileHover={{ scale: 1.08 }}
+              transition={{ duration: 0.3 }}
+              className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500/20 to-indigo-600/20 flex items-center justify-center glow-border overflow-hidden p-1"
             >
-              <span className="text-white font-bold text-xl">M</span>
+              <img src="/logo_emblem.png" alt="Mathematics for Mankind Logo" className="w-full h-full object-contain" />
             </motion.div>
             <span className="text-xl font-heading font-bold text-white tracking-wider">
               Math<span className="text-purple-400">ForMankind</span>
@@ -54,17 +54,26 @@ const Navbar = () => {
 
           <div className="flex items-center">
             {isAuthenticated ? (
-              <div className="flex items-center space-x-4">
+              <div className="flex items-center space-x-3">
                 {user?.role === 'teacher' && (
                   <Link to="/teacher-dashboard" className="hidden md:flex items-center space-x-2 px-3 py-2 rounded-lg bg-teal-500/10 text-teal-400 hover:bg-teal-500/20 border border-teal-500/30 transition-all">
                     <span>Admin Dashboard</span>
                   </Link>
                 )}
+                {/* Doubt Dump quick-access icon — visible on mobile without hamburger */}
+                <Link
+                  to="/doubtdump"
+                  className="md:hidden ml-2 sm:ml-4 flex items-center justify-center w-9 h-9 rounded-lg bg-purple-500/15 text-purple-400 hover:bg-purple-500/30 border border-purple-500/30 transition-all shrink-0"
+                  title="Doubt Dump"
+                >
+                  <MessageCircleQuestion size={18} />
+                </Link>
                 <Link to="/profile" className="flex items-center space-x-2 text-slate-300 hover:text-white transition-colors">
                   <div className="w-8 h-8 rounded-full bg-indigo-500/20 flex items-center justify-center border border-indigo-500/30 text-indigo-400">
                     <User size={16} />
                   </div>
-                  <span className="font-medium">{user?.name?.split(' ')[0]}</span>
+                  {/* Hide username on mobile to avoid crowding */}
+                  <span className="hidden md:inline font-medium">{user?.name?.split(' ')[0]}</span>
                 </Link>
                 <button
                   onClick={logout}

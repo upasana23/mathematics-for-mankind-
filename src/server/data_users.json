@@ -52,5 +52,14 @@
     "role": "student",
     "password": "$2b$10$KZe6jkhVNIUZXR3MWmlmJejT7BO0OiMznUAEOmpygXCTFO9Z8OUiO",
     "createdAt": "2026-09-04T17:18:21.819Z"
+  },
+  {
+    "_id": "local_1788800146794",
+    "name": "upax3",
+    "school": "khaa",
+    "classLevel": "5",
+    "role": "student",
+    "password": "$2b$10$12uKliyEFIYviC93WLuvIeRpdrLWensnRdf0.5U.aqATSwtlL6VQK",
+    "createdAt": "2026-09-07T16:55:46.794Z"
   }
 ]

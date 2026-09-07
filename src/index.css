@@ -17,6 +17,7 @@
     @apply bg-navy-900 text-slate-100 antialiased overflow-x-hidden min-h-screen;
     background: radial-gradient(circle at top, #060d21 0%, #020612 100%);
     -webkit-tap-highlight-color: transparent;
+    color-scheme: dark;
   }
   
   h1, h2, h3, h4, h5, h6 {

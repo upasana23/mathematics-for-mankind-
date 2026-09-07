@@ -37,7 +37,7 @@ router.get('/', async (req, res) => {
     const { classLevel } = req.query;
     if (mongoose.connection.readyState === 1) {
       try {
-        const filter = classLevel ? { classLevel } : {};
+        const filter = classLevel ? { classLevel: String(classLevel) } : {};
         const notes = await Note.find(filter).sort({ createdAt: -1 });
         return res.json(notes);
       } catch (dbErr) {
@@ -70,35 +70,41 @@ router.post('/', roleCheck, upload.single('file'), async (req, res) => {
       return res.status(500).json({ message: cloudErr.message });
     }
 
+    const notePayload = {
+      title,
+      classLevel: String(classLevel),
+      category: category || 'Other',
+      fileUrl,
+      uploadedBy: req.user?.id || req.user?._id
+    };
+
+    let savedNote = null;
+
     if (mongoose.connection.readyState === 1) {
       try {
-        const newNote = await Note.create({
-          title,
-          classLevel,
-          category,
-          fileUrl,
-          uploadedBy: req.user.id
-        });
-        return res.status(201).json(newNote);
+        savedNote = await Note.create(notePayload);
       } catch (dbErr) {
         console.warn('MongoDB note create warning:', dbErr.message);
       }
     }
 
-    const newNote = {
-      _id: 'note_' + Date.now(),
+    // Always mirror to local backup store as well
+    const localNote = {
+      _id: savedNote?._id ? String(savedNote._id) : ('note_' + Date.now()),
       title,
-      classLevel,
-      category,
+      classLevel: String(classLevel),
+      category: category || 'Other',
       fileUrl,
-      uploadedBy: req.user.id,
-      createdAt: new Date().toISOString(),
+      uploadedBy: req.user?.id || req.user?._id,
+      createdAt: savedNote?.createdAt || new Date().toISOString(),
     };
     const notes = getLocalNotes();
-    notes.unshift(newNote);
+    notes.unshift(localNote);
     saveLocalNotes(notes);
-    res.status(201).json(newNote);
+
+    return res.status(201).json(savedNote || localNote);
   } catch (err) {
+    console.error('Note upload error:', err);
     res.status(500).json({ message: err.message });
   }
 });

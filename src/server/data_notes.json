@@ -1,1 +1,29 @@
-[]
+[
+  {
+    "_id": "6a9eed8d1a9fdbc5e1c77f9a",
+    "title": "trial",
+    "classLevel": "5",
+    "category": "Algebra",
+    "fileUrl": "https://res.cloudinary.com/dujsosnk8/image/upload/v1788800396/mathematics-for-mankind/notes/1788800395435-Screenshot_2026_06_19_192322_png.png",
+    "uploadedBy": "69c556c66e2562705bd39ce5",
+    "createdAt": "2026-09-07T16:59:57.239Z"
+  },
+  {
+    "_id": "note_1788800202821",
+    "title": "trial",
+    "classLevel": "5",
+    "category": "Algebra",
+    "fileUrl": "https://res.cloudinary.com/dujsosnk8/image/upload/v1788800202/mathematics-for-mankind/notes/1788800201264-Screenshot_2026_06_19_192322_png.png",
+    "uploadedBy": "69c556c66e2562705bd39ce5",
+    "createdAt": "2026-09-07T16:56:42.822Z"
+  },
+  {
+    "_id": "note_1788800110053",
+    "title": "trial",
+    "classLevel": "5",
+    "category": "Algebra",
+    "fileUrl": "https://res.cloudinary.com/dujsosnk8/image/upload/v1788800109/mathematics-for-mankind/notes/1788800108260-Screenshot_2026_06_19_192322_png.png",
+    "uploadedBy": "69c556c66e2562705bd39ce5",
+    "createdAt": "2026-09-07T16:55:10.053Z"
+  }
+]
